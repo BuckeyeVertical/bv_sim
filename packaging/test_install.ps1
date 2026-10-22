@@ -60,3 +60,7 @@ try {
     $env:Path = $originalProcessPath
     if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
 }
+
+# The missing-Docker check deliberately leaves LASTEXITCODE at 1. Report success
+# only after every assertion and cleanup completes; thrown errors still fail CI.
+exit 0
