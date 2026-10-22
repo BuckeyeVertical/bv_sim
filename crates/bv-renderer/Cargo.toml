@@ -1,0 +1,13 @@
+[package]
+name = "bv-renderer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bv-protocol.workspace = true
+bevy.workspace = true
+clap.workspace = true
+image.workspace = true
+serde.workspace = true
+serde_json.workspace = true

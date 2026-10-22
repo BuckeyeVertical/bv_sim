@@ -1,0 +1,54 @@
+namespace bv.sim;
+
+// Control messages share the same bounded UDP envelope as state messages.
+enum MessageKind : ubyte {
+  Unknown = 0,
+  Hello = 1,
+  Welcome = 2,
+  State = 3,
+  Heartbeat = 4
+}
+
+// Meters in the authoritative Gazebo world: east, north, up.
+struct Position {
+  x: double;
+  y: double;
+  z: double;
+}
+
+// World-space orientation, quaternion order x, y, z, w.
+struct Orientation {
+  x: float;
+  y: float;
+  z: float;
+  w: float;
+}
+
+struct Pose {
+  position: Position;
+  orientation: Orientation;
+}
+
+table EntityState {
+  // 1 = vehicle/x500; 2 = camera/drone. IDs never depend on array order.
+  id: uint;
+  pose: Pose;
+}
+
+table Packet {
+  protocol_version: ushort = 2;
+  kind: MessageKind = Unknown;
+  // A fresh nonzero nonce for each subscription handshake.
+  client_id: ulong;
+  // A fresh nonzero identity on bridge restart or simulation reset.
+  run_id: ulong;
+  sequence: ulong;
+  sim_time_ns: ulong;
+  // State messages contain the complete configured entity set.
+  entities: [EntityState];
+}
+
+root_type Packet;
+file_identifier "BVST";
+file_extension "bvstate";
+

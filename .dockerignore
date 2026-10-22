@@ -1,0 +1,10 @@
+.git
+target
+dist
+.cache
+.tools
+assets
+crates
+**/__pycache__
+**/.DS_Store
+

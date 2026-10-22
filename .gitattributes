@@ -1,0 +1,5 @@
+# Linux entrypoints must remain executable scripts after a Windows checkout.
+* text=auto eol=lf
+*.glb binary
+*.jpg binary
+*.bvstate binary

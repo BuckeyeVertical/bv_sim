@@ -1,0 +1,16 @@
+[package]
+name = "bv-sim"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Native BV simulation launcher and renderer"
+
+[dependencies]
+anyhow.workspace = true
+bevy.workspace = true
+clap.workspace = true
+ctrlc.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+bv-renderer = { path = "../bv-renderer" }

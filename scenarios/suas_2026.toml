@@ -1,0 +1,13 @@
+format_version = 1
+name = "suas_2026"
+
+[home]
+latitude = 36.214675
+longitude = -96.00655556
+altitude_m = 0.0
+
+[camera]
+width = 1920
+height = 1080
+horizontal_fov_deg = 79.797385
+jpeg_quality = 90

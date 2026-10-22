@@ -1,0 +1,9 @@
+/target/
+/.cache/
+/.tools/
+/dist/
+/backend/build/
+__pycache__/
+*.pyc
+.DS_Store
+
