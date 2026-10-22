@@ -83,7 +83,7 @@ archives use the same installer and do not need Rust or a source checkout.
 Once an image has actually been published, a release user can run:
 
 ```bash
-bv-sim run suas_2026 --image ghcr.io/your-org/bv-sim-backend:0.1.0
+bv-sim run suas_2026 --image ghcr.io/trevorclute/bv-sim-backend:0.1.0
 ```
 
 The launcher downloads a missing image automatically. `BV_SIM_IMAGE` sets a
@@ -143,12 +143,19 @@ replay frames independently of mission software.
 The [local validation record](docs/validation.md) describes the tested startup,
 camera, cleanup, and installer paths and the remaining platform checks.
 
-To use the included GitHub workflows in the new repository, configure its GHCR
-namespace, update the default image in `crates/bv-sim/src/docker.rs`,
-and keep `VERSION`, Rust package versions, and image
-tags aligned. Set repository variables `BV_SIM_PUBLISH_IMAGES=true` and
-`BV_SIM_IMAGE_REPOSITORY=ghcr.io/your-org/bv-sim-backend` to enable versioned image
-publication. `BV_SIM_PUBLISH_RELEASES=true` enables native archive publication.
+The launcher's default backend image is
+`ghcr.io/trevorclute/bv-sim-backend:<version>`. Keep `VERSION`, Rust package
+versions, and image tags aligned. Set repository variables
+`BV_SIM_PUBLISH_IMAGES=true`,
+`BV_SIM_IMAGE_REPOSITORY=ghcr.io/trevorclute/bv-sim-backend`, and
+`BV_SIM_REGISTRY_USERNAME=trevorclute` to enable versioned image publication.
+When publishing from a repository owned by another account or organization
+(such as `BuckeyeVertical/bv_sim`) into this personal namespace, add a repository
+Actions secret named `GHCR_TOKEN` containing a personal access token (classic)
+from `trevorclute` with `write:packages` permission. The workflow uses this secret
+when present; otherwise it uses the repository's automatic `GITHUB_TOKEN`.
+See [GitHub's registry authentication guidance](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
+`BV_SIM_PUBLISH_RELEASES=true` enables native archive publication.
 Both publication steps are disabled until configured. Tags use `v<version>`.
 The release workflow builds all three platforms and runs the Windows installer
 against the native Windows executable. `packaging/bundle.py` packages a compiled
