@@ -23,8 +23,11 @@ this service does not render camera images.
 Build from the repository root:
 
 ```sh
-docker build -f backend/Dockerfile -t "bv-sim-backend:$(python3 tools/bump_version.py --check)" .
+docker build -f backend/Dockerfile -t bv-sim-backend:local .
 ```
+
+To use this manually built image with the launcher, run
+`cargo run -- run suas_2026 --image bv-sim-backend:local`.
 
 The default build uses the host's native CPU architecture. Release CI can pass
 `--platform linux/amd64` or `--platform linux/arm64` to `docker buildx build`.
@@ -44,7 +47,7 @@ docker run --rm --name bv-sim \
   -e PX4_HOME_ALT=0 \
   -p 127.0.0.1:7001:7001/udp \
   -p 14580:14580/udp -p 18570:18570/udp \
-  "bv-sim-backend:$(python3 tools/bump_version.py --check)"
+  bv-sim-backend:local
 ```
 
 `PX4_HOME_ALT` is the altitude of the geographic origin, in meters AMSL; it is

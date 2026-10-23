@@ -40,7 +40,12 @@ jobs:
         shell: bash
         env:
           RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-        run: python tools/bump_version.py --check --tag "$RELEASE_TAG"
+        run: |
+          version="$(python -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
+          if [ -n "$RELEASE_TAG" ] && [ "$RELEASE_TAG" != "v$version" ]; then
+            echo "::error::Tag $RELEASE_TAG does not match Cargo.toml version $version; expected v$version. Commit the version change before tagging."
+            exit 1
+          fi
       - run: cargo build --release --locked --package bv-sim --target ${{ matrix.target }}
       - name: Verify Windows executable and installer
         if: runner.os == 'Windows'

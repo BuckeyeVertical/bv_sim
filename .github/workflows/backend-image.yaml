@@ -28,7 +28,11 @@ jobs:
         run: |
           test -n "$IMAGE_REPOSITORY"
           case "$IMAGE_REPOSITORY" in ghcr.io/*) ;; *) echo "Set BV_SIM_IMAGE_REPOSITORY to ghcr.io/buckeyevertical/bv-sim-backend" >&2; exit 1 ;; esac
-          version="$(python tools/bump_version.py --check --tag "$RELEASE_TAG")"
+          version="$(python -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
+          if [ -n "$RELEASE_TAG" ] && [ "$RELEASE_TAG" != "v$version" ]; then
+            echo "::error::Tag $RELEASE_TAG does not match Cargo.toml version $version; expected v$version. Commit the version change before tagging."
+            exit 1
+          fi
           printf 'image=%s\nversion=%s\n' "$IMAGE_REPOSITORY" "$version" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3

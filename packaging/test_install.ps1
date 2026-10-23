@@ -8,7 +8,7 @@ if ($Binary) { $Binary = (Resolve-Path -LiteralPath $Binary).Path }
 $versionOutput = if ($Binary) {
     & $Binary --version
 } else {
-    "bv-sim $(& python (Join-Path $PSScriptRoot '../tools/bump_version.py') --check)"
+    'bv-sim 0.0.0'
 }
 if ($versionOutput -notmatch '^bv-sim ([0-9]+\.[0-9]+\.[0-9]+)$') { throw 'Invalid executable version.' }
 $releaseVersion = $Matches[1]

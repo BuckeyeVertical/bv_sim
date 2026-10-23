@@ -170,26 +170,22 @@ The [local validation record](docs/validation.md) describes the tested startup,
 camera, cleanup, and installer paths and the remaining platform checks.
 
 The launcher's default backend image is
-`ghcr.io/buckeyevertical/bv-sim-backend:<version>`. Prepare a release with
-Python 3.11 or newer from the repository root:
-
-```bash
-python3 tools/bump_version.py patch
-```
-
-The single source for the app version is `[workspace.package].version` in
+`ghcr.io/buckeyevertical/bv-sim-backend:<version>`. The single source for the app
+version is `[workspace.package].version` in
 `Cargo.toml`. All crates inherit it; image tags and archive names use it, and
 the compiled executable reports it with `bv-sim --version`. Installers read the
 version from that executable.
 
-Use `minor`, `major`, or an explicit version such as `1.2.3` instead of `patch`
-when needed. The command updates `Cargo.toml` and the derived workspace entries
-in `Cargo.lock` without network access or dependency updates. It prints the
-matching tag and push commands; run them after committing the changes.
+To prepare a release, edit that version in `Cargo.toml`, then run:
 
-`python3 tools/bump_version.py --check` verifies that the lockfile matches the
-workspace version and prints that version.
-CI runs this check, and both release workflows also verify the tag when present.
+```bash
+cargo check --workspace
+```
+
+Cargo refreshes the workspace versions in `Cargo.lock`. Commit both files,
+create a matching `vX.Y.Z` tag, and push the commit and tag. Both release
+workflows compare the tag to `Cargo.toml`, and native builds use `--locked` to
+require an up-to-date lockfile.
 
 Set repository variables
 `BV_SIM_PUBLISH_IMAGES=true`,
