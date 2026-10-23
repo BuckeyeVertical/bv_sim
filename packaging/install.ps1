@@ -6,13 +6,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$bundle = if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'VERSION')) {
+$bundle = if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'assets') -PathType Container) {
     $PSScriptRoot
 } else {
     Split-Path -Parent $PSScriptRoot
 }
-$version = (Get-Content -LiteralPath (Join-Path $bundle 'VERSION') -Raw).Trim()
-if ($version -notmatch '^[0-9A-Za-z._-]+$') { throw 'Invalid release VERSION' }
 $binary = Join-Path $bundle 'bin/bv-sim.exe'
 if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
     $binary = Join-Path $bundle 'target/release/bv-sim.exe'
@@ -20,6 +18,11 @@ if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
     throw 'Extract the complete Windows release, or first run cargo build --release -p bv-sim.'
 }
+$versionOutput = & $binary --version
+if ($LASTEXITCODE -ne 0 -or $versionOutput -notmatch '^bv-sim ([0-9]+\.[0-9]+\.[0-9]+)$') {
+    throw 'Cannot determine the release version from bv-sim --version.'
+}
+$version = $Matches[1]
 foreach ($directory in @('assets', 'scenarios')) {
     if (-not (Test-Path -LiteralPath (Join-Path $bundle $directory) -PathType Container)) {
         throw "Missing $directory. Extract the complete release archive."
@@ -42,7 +45,6 @@ foreach ($directory in @('assets', 'scenarios')) {
     }
     Copy-Item -LiteralPath (Join-Path $bundle $directory) -Destination $InstallDir -Recurse
 }
-Copy-Item -LiteralPath (Join-Path $bundle 'VERSION') -Destination $InstallDir -Force
 
 if (-not $NoPath) {
     if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
@@ -59,7 +61,7 @@ if (-not $NoPath) {
 }
 Write-Host "Installed bv-sim $version to $InstallDir"
 if ($NoPath) {
-    Write-Host "Add $bin to your PATH, then run: bv-sim doctor"
+    Write-Host "Add $bin to your PATH, start Docker, then run: bv-sim run suas_2026"
 } else {
-    Write-Host 'Open a new terminal, then run: bv-sim doctor'
+    Write-Host 'Open a new terminal, start Docker, then run: bv-sim run suas_2026'
 }

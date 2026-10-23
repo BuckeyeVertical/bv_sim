@@ -27,18 +27,23 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev libudev-dev libx11-dev libxi-dev libxkbcommon-dev libwayland-dev
       - uses: Swatinem/rust-cache@v2
+      - run: python tools/bump_version.py --check
+      - run: python -m unittest discover -s tools -p 'test_bump_version.py'
       - run: python tools/generate_protocol.py --check
       - run: cargo fmt --all --check
       - run: cargo test --workspace --locked
       - run: python -m unittest discover -s tools/camera -p 'test_*.py'
       - run: python -m unittest discover -s backend/px4 -p 'test_*.py'
-      - run: python packaging/test_install.py
+      - run: python -m unittest discover -s packaging -p 'test_*.py'
         if: runner.os != 'Windows'
-      - run: bash -n packaging/install.sh backend/entrypoint.sh
+      - run: bash -n install.sh packaging/install.sh backend/entrypoint.sh
         if: runner.os != 'Windows'
       - run: cargo build --locked -p bv-sim
         if: runner.os == 'Windows'
       - run: ./packaging/test_install.ps1 -Binary target/debug/bv-sim.exe
+        if: runner.os == 'Windows'
+        shell: pwsh
+      - run: ./packaging/test_download_install.ps1 -Binary target/debug/bv-sim.exe
         if: runner.os == 'Windows'
         shell: pwsh
 

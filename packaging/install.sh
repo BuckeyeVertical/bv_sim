@@ -14,15 +14,11 @@ fi
 : "${HOME:?HOME is required for a user-local installation}"
 
 script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
-if [[ -f "$script_dir/VERSION" ]]; then
+if [[ -d "$script_dir/assets" && -d "$script_dir/scenarios" ]]; then
     bundle="$script_dir"
 else
     bundle="$(CDPATH= cd -- "$script_dir/.." && pwd -P)"
 fi
-version="$(cat "$bundle/VERSION")"
-case "$version" in
-    ''|*[!0-9A-Za-z._-]*) echo "Invalid release VERSION" >&2; exit 1 ;;
-esac
 binary="$bundle/bin/bv-sim"
 if [[ ! -f "$binary" ]]; then
     binary="$bundle/target/release/bv-sim"
@@ -31,13 +27,18 @@ if [[ ! -f "$binary" || ! -d "$bundle/assets" || ! -d "$bundle/scenarios" ]]; th
     echo "Install the complete release bundle, or first run cargo build --release -p bv-sim in the source checkout." >&2
     exit 1
 fi
+version_output="$("$binary" --version)"
+if [[ ! "$version_output" =~ ^bv-sim[[:space:]]([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+    echo "Cannot determine the release version from bv-sim --version." >&2
+    exit 1
+fi
+version="${BASH_REMATCH[1]}"
 
 install_root="$HOME/.local/share/bv-sim"
 bin_dir="$HOME/.local/bin"
 release_dir="$install_root/releases/$version"
 mkdir -p "$release_dir/bin" "$bin_dir"
 cp -R "$bundle/assets" "$bundle/scenarios" "$release_dir/"
-cp "$bundle/VERSION" "$release_dir/VERSION"
 install -m 755 "$binary" "$release_dir/bin/bv-sim"
 ln -sfn "releases/$version" "$install_root/current"
 
@@ -70,7 +71,7 @@ fi
 
 printf 'Installed bv-sim %s to %s\n' "$version" "$release_dir"
 if [[ "$no_path" == false && -n "$config" ]]; then
-    printf 'Open a new terminal, then run: bv-sim doctor\n'
+    printf 'Open a new terminal, start Docker, then run: bv-sim run suas_2026\n'
 else
-    printf 'Add %s to your PATH, then run: bv-sim doctor\n' "$bin_dir"
+    printf 'Add %s to your PATH, start Docker, then run: bv-sim run suas_2026\n' "$bin_dir"
 fi

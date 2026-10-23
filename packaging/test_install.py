@@ -21,9 +21,11 @@ class InstallTest(unittest.TestCase):
             (bundle / "scenarios").mkdir()
             (bundle / "assets" / "asset.txt").write_text("asset")
             (bundle / "scenarios" / "suas_2026.toml").write_text("scenario")
-            (bundle / "VERSION").write_text("0.1.0\n")
             binary = bundle / "bin" / "bv-sim"
-            binary.write_text('#!/bin/sh\nprintf "ok:%s\\n" "$1"\n')
+            binary.write_text(
+                '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "bv-sim 0.1.0"; '
+                'else printf "ok:%s\\n" "$1"; fi\n'
+            )
             binary.chmod(0o755)
             shutil.copy2(source / "install.sh", bundle / "install.sh")
             environment = dict(os.environ, HOME=str(home), SHELL="/bin/zsh")

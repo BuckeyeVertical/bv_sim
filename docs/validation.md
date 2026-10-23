@@ -48,7 +48,7 @@ started during these checks; the existing camera wire contract was verified.
   elements or mesh assets. Required inertia, collisions, joints, sensors, and
   controllers are preserved. Scenery placeholders and the offline patch are gone.
   The unused Compose alternative and duplicate release metadata are removed;
-  the launcher, `VERSION`, and CI workflow matrices define startup and releases.
+  the launcher, `Cargo.toml`, and CI workflow matrices define startup and releases.
 - The rebuilt Linux backend passed all five C++ tests, reached healthy status
   with zero mounts, and sent complete state through Docker's published UDP port.
 - PX4 performed an actual takeoff from about -0.013 m to over 1.68 m. The native

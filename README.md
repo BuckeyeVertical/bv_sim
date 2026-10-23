@@ -5,9 +5,7 @@ application draws the SUAS 2026 field and streams onboard-camera images
 to the existing mission software. Runtime simulation containers use no host
 file mounts. The waypoint editor is outside this rewrite.
 
-This directory is designed to become a standalone repository. **No registry
-image or native release has been published by creating these files.** The
-working source-checkout path builds the backend locally:
+To build and run from a source checkout, build the backend locally:
 
 ```bash
 cd bv_sim
@@ -45,7 +43,35 @@ cargo run -- run suas_2026 --screenshot /tmp/suas.png
 render without flight state; onboard-camera frames require valid vehicle and
 camera state.
 
-## Installation and future releases
+## Installation
+
+Install and start Docker Desktop or Docker Engine first. Once a native release
+has been published, install the latest executable and assets with one command.
+
+**macOS (Apple Silicon) or Linux (x86_64, Ubuntu 24.04 or compatible):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BuckeyeVertical/bv_sim/main/install.sh | bash
+```
+
+**Windows (x86_64), in PowerShell:**
+
+```powershell
+irm https://raw.githubusercontent.com/BuckeyeVertical/bv_sim/main/install.ps1 | iex
+```
+
+Open a new terminal and run:
+
+```bash
+bv-sim run suas_2026
+```
+
+The command downloads the matching backend image automatically. Run the install
+command again to upgrade to the latest published release. Installation requires
+no Rust, source checkout, or administrator access. Linux still needs a desktop
+session, GPU drivers, and the window/audio runtime libraries described above.
+
+### Manual installation and source builds
 
 Release downloads contain the executable **and its assets**. Windows uses a
 `.zip`; macOS and Linux use `.tar.gz`. Users do not need Rust or a source checkout.
@@ -59,7 +85,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 The installer copies the executable and its data to
 `%LOCALAPPDATA%\Programs\BVSim`, adds its `bin` directory to the user PATH,
 and requires no administrator access. The execution-policy option applies only
-to this installer process. Open a new terminal, then run `bv-sim doctor` and
+to this installer process. Open a new terminal, then run
 `bv-sim run suas_2026`. Docker Desktop must be running in Linux-container mode.
 The published backend tag needs a `linux/amd64` image for Windows x86_64.
 The included backend release workflow publishes both `linux/amd64` and
@@ -83,12 +109,12 @@ archives use the same installer and do not need Rust or a source checkout.
 Once an image has actually been published, a release user can run:
 
 ```bash
-bv-sim run suas_2026 --image ghcr.io/buckeyevertical/bv-sim-backend:0.1.1
+bv-sim run suas_2026
 ```
 
 The launcher downloads a missing image automatically. `BV_SIM_IMAGE` sets a
 default registry image, while `--build` defaults to the local tag
-`bv-sim-backend:0.1.1`. Registry errors explain how to build locally or supply an
+`bv-sim-backend:<version>`. Registry errors explain how to build locally or supply an
 available image. `latest` is deliberately not used for version matching.
 
 ## Interfaces
@@ -144,8 +170,28 @@ The [local validation record](docs/validation.md) describes the tested startup,
 camera, cleanup, and installer paths and the remaining platform checks.
 
 The launcher's default backend image is
-`ghcr.io/buckeyevertical/bv-sim-backend:<version>`. Keep `VERSION`, Rust package
-versions, and image tags aligned. Set repository variables
+`ghcr.io/buckeyevertical/bv-sim-backend:<version>`. Prepare a release with
+Python 3.11 or newer from the repository root:
+
+```bash
+python3 tools/bump_version.py patch
+```
+
+The single source for the app version is `[workspace.package].version` in
+`Cargo.toml`. All crates inherit it; image tags and archive names use it, and
+the compiled executable reports it with `bv-sim --version`. Installers read the
+version from that executable.
+
+Use `minor`, `major`, or an explicit version such as `1.2.3` instead of `patch`
+when needed. The command updates `Cargo.toml` and the derived workspace entries
+in `Cargo.lock` without network access or dependency updates. It prints the
+matching tag and push commands; run them after committing the changes.
+
+`python3 tools/bump_version.py --check` verifies that the lockfile matches the
+workspace version and prints that version.
+CI runs this check, and both release workflows also verify the tag when present.
+
+Set repository variables
 `BV_SIM_PUBLISH_IMAGES=true`,
 `BV_SIM_IMAGE_REPOSITORY=ghcr.io/buckeyevertical/bv-sim-backend` to enable
 versioned image publication. Publishing from `BuckeyeVertical/bv_sim` uses the

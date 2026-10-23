@@ -2,10 +2,16 @@
 param([string]$Binary)
 
 $ErrorActionPreference = 'Stop'
-$releaseVersion = (Get-Content -LiteralPath (Join-Path $PSScriptRoot '../VERSION') -Raw).Trim()
 $windows = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
 if ($windows -and -not $Binary) { throw 'Pass -Binary with a built bv-sim.exe on Windows.' }
 if ($Binary) { $Binary = (Resolve-Path -LiteralPath $Binary).Path }
+$versionOutput = if ($Binary) {
+    & $Binary --version
+} else {
+    "bv-sim $(& python (Join-Path $PSScriptRoot '../tools/bump_version.py') --check)"
+}
+if ($versionOutput -notmatch '^bv-sim ([0-9]+\.[0-9]+\.[0-9]+)$') { throw 'Invalid executable version.' }
+$releaseVersion = $Matches[1]
 $root = Join-Path ([IO.Path]::GetTempPath()) ('bv-sim-install-' + [Guid]::NewGuid().ToString('N'))
 $bundle = Join-Path $root "a user's downloads [test]/release"
 $installed = Join-Path $root "a user's programs [test]/BVSim"
@@ -15,14 +21,15 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $bundle 'bin') -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $bundle 'assets') -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $bundle 'scenarios') -Force | Out-Null
-    Set-Content -LiteralPath (Join-Path $bundle 'VERSION') -Value $releaseVersion
     Set-Content -LiteralPath (Join-Path $bundle 'assets/asset.txt') -Value 'asset'
     Set-Content -LiteralPath (Join-Path $bundle 'scenarios/suas_2026.toml') -Value 'scenario'
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'install.ps1') -Destination $bundle
     if ($Binary) {
         Copy-Item -LiteralPath $Binary -Destination (Join-Path $bundle 'bin/bv-sim.exe')
     } else {
-        Set-Content -LiteralPath (Join-Path $bundle 'bin/bv-sim.exe') -Value 'file-copy fixture'
+        $fixture = Join-Path $bundle 'bin/bv-sim.exe'
+        Set-Content -LiteralPath $fixture -Value "#!/bin/sh`necho bv-sim $releaseVersion"
+        & chmod +x $fixture
     }
     & (Join-Path $bundle 'install.ps1') -InstallDir $installed -NoPath
     Set-Content -LiteralPath (Join-Path $installed 'assets/stale.txt') -Value 'obsolete asset'

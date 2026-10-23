@@ -7,6 +7,7 @@ import re
 import shutil
 import tarfile
 import tempfile
+import tomllib
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,9 +16,9 @@ TARGETS = WINDOWS | {"aarch64-apple-darwin", "x86_64-unknown-linux-gnu"}
 
 
 def bundle(binary: Path, target: str, output: Path) -> Path:
-    version = (ROOT / "VERSION").read_text().strip()
+    version = tomllib.loads((ROOT / "Cargo.toml").read_text())["workspace"]["package"]["version"]
     if not re.fullmatch(r"[0-9A-Za-z._-]+", version):
-        raise ValueError("invalid release VERSION")
+        raise ValueError("invalid workspace package version in Cargo.toml")
     if not binary.is_file():
         raise ValueError(f"binary does not exist: {binary}")
     windows = target in WINDOWS
@@ -40,8 +41,7 @@ def bundle(binary: Path, target: str, output: Path) -> Path:
         for source in (ROOT / "tools/camera").iterdir():
             if source.suffix == ".py" or source.name == "README.md":
                 shutil.copy2(source, camera / source.name)
-        for filename in ("VERSION", "README.md"):
-            shutil.copy2(ROOT / filename, stage / filename)
+        shutil.copy2(ROOT / "README.md", stage / "README.md")
         installer = "install.ps1" if windows else "install.sh"
         shutil.copy2(ROOT / "packaging" / installer, stage / installer)
         if windows:

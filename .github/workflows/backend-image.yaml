@@ -17,17 +17,18 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - name: Resolve version and configured image repository
         id: release
         env:
           IMAGE_REPOSITORY: ${{ vars.BV_SIM_IMAGE_REPOSITORY }}
-          GIT_REF_NAME: ${{ github.ref_name }}
-          GIT_REF_TYPE: ${{ github.ref_type }}
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
           test -n "$IMAGE_REPOSITORY"
           case "$IMAGE_REPOSITORY" in ghcr.io/*) ;; *) echo "Set BV_SIM_IMAGE_REPOSITORY to ghcr.io/buckeyevertical/bv-sim-backend" >&2; exit 1 ;; esac
-          version="$(cat VERSION)"
-          if [ "$GIT_REF_TYPE" = tag ]; then test "$GIT_REF_NAME" = "v$version"; fi
+          version="$(python tools/bump_version.py --check --tag "$RELEASE_TAG")"
           printf 'image=%s\nversion=%s\n' "$IMAGE_REPOSITORY" "$version" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
