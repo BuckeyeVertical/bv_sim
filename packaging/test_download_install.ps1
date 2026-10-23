@@ -16,6 +16,8 @@ $script:fixtureArchive = Join-Path $root 'fixture.zip'
 $script:downloadedArchive = $null
 $script:failDownload = $false
 $script:omitAsset = $false
+$originalArchitecture = $env:PROCESSOR_ARCHITECTURE
+$originalWow64Architecture = $env:PROCESSOR_ARCHITEW6432
 
 function Invoke-RestMethod {
     param([string]$Uri, [hashtable]$Headers)
@@ -50,7 +52,15 @@ try {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'install.ps1') -Destination $bundle
     Compress-Archive -LiteralPath $bundle -DestinationPath $script:fixtureArchive -CompressionLevel Fastest
     $bootstrap = Join-Path $PSScriptRoot '../install.ps1'
-    & $bootstrap -NoPath -InstallDir $installed
+    $bootstrapContents = Get-Content -LiteralPath $bootstrap -Raw
+    # Exercise both file execution and the README's piped Invoke-Expression path.
+    foreach ($mode in @('file', 'expression')) {
+        if ($mode -eq 'file') {
+            & $bootstrap -NoPath -InstallDir $installed
+        } else {
+            "& {`n$bootstrapContents`n} -NoPath -InstallDir `$installed" | Invoke-Expression
+        }
+    }
     foreach ($file in @('bin/bv-sim.exe', 'assets/asset.txt', 'scenarios/suas_2026.toml')) {
         if (-not (Test-Path -LiteralPath (Join-Path $installed $file))) { throw "Installed $file missing." }
     }
@@ -70,7 +80,33 @@ try {
         $failed = $true
     }
     if (-not $failed) { throw 'A missing release asset was not reported.' }
-    Write-Host 'Windows download installer: complete bundle, missing asset, and failed download checks passed.'
+
+    # A missing asset confirms supported architectures got past the platform
+    # check, without downloading or installing another copy of the bundle.
+    foreach ($case in @(
+        @{ Process = 'AMD64'; Native = $null; Supported = $true },
+        @{ Process = 'x86'; Native = 'AMD64'; Supported = $true },
+        @{ Process = 'ARM64'; Native = $null; Supported = $false },
+        @{ Process = 'AMD64'; Native = 'ARM64'; Supported = $false },
+        @{ Process = 'x86'; Native = 'ARM64'; Supported = $false },
+        @{ Process = 'x86'; Native = $null; Supported = $false },
+        @{ Process = $null; Native = $null; Supported = $false }
+    )) {
+        $env:PROCESSOR_ARCHITECTURE = $case.Process
+        $env:PROCESSOR_ARCHITEW6432 = $case.Native
+        $expectedError = if ($case.Supported) { 'does not include' } else { 'requires x86_64 Windows' }
+        $failed = $false
+        try {
+            "& {`n$bootstrapContents`n} -NoPath -InstallDir `$installed" | Invoke-Expression
+        } catch {
+            if (-not $_.ToString().Contains($expectedError)) { throw }
+            $failed = $true
+        }
+        if (-not $failed) { throw "Architecture check did not report: $expectedError" }
+    }
+    Write-Host 'Windows download installer: complete bundle, Invoke-Expression, architecture, missing asset, and failed download checks passed.'
 } finally {
+    $env:PROCESSOR_ARCHITECTURE = $originalArchitecture
+    $env:PROCESSOR_ARCHITEW6432 = $originalWow64Architecture
     if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
 }

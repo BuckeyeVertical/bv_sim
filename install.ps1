@@ -6,8 +6,17 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT -or
-    [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -ne 'X64') {
+if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+    throw 'The Windows release requires x86_64 Windows.'
+}
+# RuntimeInformation.OSArchitecture can be missing in Windows PowerShell 5.1.
+# Under WOW64, PROCESSOR_ARCHITEW6432 identifies the native OS architecture.
+$architecture = if ($env:PROCESSOR_ARCHITEW6432) {
+    $env:PROCESSOR_ARCHITEW6432
+} else {
+    $env:PROCESSOR_ARCHITECTURE
+}
+if ($architecture -ne 'AMD64') {
     throw 'The Windows release requires x86_64 Windows.'
 }
 $repository = 'BuckeyeVertical/bv_sim'

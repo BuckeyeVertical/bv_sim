@@ -44,6 +44,9 @@ jobs:
       - run: ./packaging/test_download_install.ps1 -Binary target/debug/bv-sim.exe
         if: runner.os == 'Windows'
         shell: pwsh
+      - run: ./packaging/test_download_install.ps1 -Binary target/debug/bv-sim.exe
+        if: runner.os == 'Windows'
+        shell: powershell
 
   backend:
     runs-on: ubuntu-24.04
