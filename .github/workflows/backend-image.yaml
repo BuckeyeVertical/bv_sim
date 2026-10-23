@@ -25,7 +25,7 @@ jobs:
           GIT_REF_TYPE: ${{ github.ref_type }}
         run: |
           test -n "$IMAGE_REPOSITORY"
-          case "$IMAGE_REPOSITORY" in ghcr.io/*) ;; *) echo "Set BV_SIM_IMAGE_REPOSITORY to ghcr.io/trevorclute/bv-sim-backend" >&2; exit 1 ;; esac
+          case "$IMAGE_REPOSITORY" in ghcr.io/*) ;; *) echo "Set BV_SIM_IMAGE_REPOSITORY to ghcr.io/buckeyevertical/bv-sim-backend" >&2; exit 1 ;; esac
           version="$(cat VERSION)"
           if [ "$GIT_REF_TYPE" = tag ]; then test "$GIT_REF_NAME" = "v$version"; fi
           printf 'image=%s\nversion=%s\n' "$IMAGE_REPOSITORY" "$version" >> "$GITHUB_OUTPUT"

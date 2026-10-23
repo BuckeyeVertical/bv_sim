@@ -83,12 +83,12 @@ archives use the same installer and do not need Rust or a source checkout.
 Once an image has actually been published, a release user can run:
 
 ```bash
-bv-sim run suas_2026 --image ghcr.io/trevorclute/bv-sim-backend:0.1.0
+bv-sim run suas_2026 --image ghcr.io/buckeyevertical/bv-sim-backend:0.1.1
 ```
 
 The launcher downloads a missing image automatically. `BV_SIM_IMAGE` sets a
 default registry image, while `--build` defaults to the local tag
-`bv-sim-backend:0.1.0`. Registry errors explain how to build locally or supply an
+`bv-sim-backend:0.1.1`. Registry errors explain how to build locally or supply an
 available image. `latest` is deliberately not used for version matching.
 
 ## Interfaces
@@ -144,17 +144,16 @@ The [local validation record](docs/validation.md) describes the tested startup,
 camera, cleanup, and installer paths and the remaining platform checks.
 
 The launcher's default backend image is
-`ghcr.io/trevorclute/bv-sim-backend:<version>`. Keep `VERSION`, Rust package
+`ghcr.io/buckeyevertical/bv-sim-backend:<version>`. Keep `VERSION`, Rust package
 versions, and image tags aligned. Set repository variables
 `BV_SIM_PUBLISH_IMAGES=true`,
-`BV_SIM_IMAGE_REPOSITORY=ghcr.io/trevorclute/bv-sim-backend`, and
-`BV_SIM_REGISTRY_USERNAME=trevorclute` to enable versioned image publication.
-When publishing from a repository owned by another account or organization
-(such as `BuckeyeVertical/bv_sim`) into this personal namespace, add a repository
-Actions secret named `GHCR_TOKEN` containing a personal access token (classic)
-from `trevorclute` with `write:packages` permission. The workflow uses this secret
-when present; otherwise it uses the repository's automatic `GITHUB_TOKEN`.
-See [GitHub's registry authentication guidance](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
+`BV_SIM_IMAGE_REPOSITORY=ghcr.io/buckeyevertical/bv-sim-backend` to enable
+versioned image publication. Publishing from `BuckeyeVertical/bv_sim` uses the
+repository's automatic `GITHUB_TOKEN` with `packages: write`; leave
+`BV_SIM_REGISTRY_USERNAME` and `GHCR_TOKEN` unset to use that authentication.
+For another namespace, `BV_SIM_REGISTRY_USERNAME` and the Actions secret
+`GHCR_TOKEN` can override the registry login. See
+[GitHub's registry authentication guidance](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-in-a-github-actions-workflow).
 `BV_SIM_PUBLISH_RELEASES=true` enables native archive publication.
 Both publication steps are disabled until configured. Tags use `v<version>`.
 The release workflow builds all three platforms and runs the Windows installer

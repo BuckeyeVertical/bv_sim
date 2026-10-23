@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
+          - os: macos-26
             target: aarch64-apple-darwin
             executable: bv-sim
           - os: ubuntu-24.04

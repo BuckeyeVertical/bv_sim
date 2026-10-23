@@ -20,7 +20,7 @@ pub const CONTAINER_NAME: &str = "bv-sim";
 pub const MANAGED_LABEL: &str = "org.buckeyevertical.bv-sim";
 const MANAGED_VALUE: &str = "managed-v1";
 pub const DEFAULT_IMAGE: &str = concat!(
-    "ghcr.io/trevorclute/bv-sim-backend:",
+    "ghcr.io/buckeyevertical/bv-sim-backend:",
     env!("CARGO_PKG_VERSION")
 );
 pub const LOCAL_IMAGE: &str = concat!("bv-sim-backend:", env!("CARGO_PKG_VERSION"));
