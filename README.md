@@ -5,6 +5,36 @@ application draws the SUAS 2026 field and streams onboard-camera images
 to the existing mission software. Runtime simulation containers use no host
 file mounts. The waypoint editor is outside this rewrite.
 
+## Installation
+
+Install and start Docker Desktop or Docker Engine first. Install the latest
+published executable and assets with the command for your operating system.
+
+**macOS (Apple Silicon) or Linux (x86_64, Ubuntu 24.04 or compatible), in Terminal:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BuckeyeVertical/bv_sim/main/install.sh | bash
+```
+
+**Windows (x86_64), in PowerShell:**
+
+```powershell
+irm https://raw.githubusercontent.com/BuckeyeVertical/bv_sim/main/install.ps1 | iex
+```
+
+Open a new terminal and run:
+
+```bash
+bv-sim run suas_2026
+```
+
+The launcher downloads the matching backend image automatically. Run the install
+command again to upgrade to the latest published release. Installation requires
+no Rust, source checkout, or administrator access. Linux needs a desktop session,
+GPU drivers, and the window/audio runtime libraries described below.
+
+## Run from source
+
 To build and run from a source checkout, build the backend locally:
 
 ```bash
@@ -43,35 +73,7 @@ cargo run -- run suas_2026 --screenshot /tmp/suas.png
 render without flight state; onboard-camera frames require valid vehicle and
 camera state.
 
-## Installation
-
-Install and start Docker Desktop or Docker Engine first. Once a native release
-has been published, install the latest executable and assets with one command.
-
-**macOS (Apple Silicon) or Linux (x86_64, Ubuntu 24.04 or compatible):**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BuckeyeVertical/bv_sim/main/install.sh | bash
-```
-
-**Windows (x86_64), in PowerShell:**
-
-```powershell
-irm https://raw.githubusercontent.com/BuckeyeVertical/bv_sim/main/install.ps1 | iex
-```
-
-Open a new terminal and run:
-
-```bash
-bv-sim run suas_2026
-```
-
-The command downloads the matching backend image automatically. Run the install
-command again to upgrade to the latest published release. Installation requires
-no Rust, source checkout, or administrator access. Linux still needs a desktop
-session, GPU drivers, and the window/audio runtime libraries described above.
-
-### Manual installation and source builds
+## Manual installation
 
 Release downloads contain the executable **and its assets**. Windows uses a
 `.zip`; macOS and Linux use `.tar.gz`. Users do not need Rust or a source checkout.
@@ -91,8 +93,14 @@ The published backend tag needs a `linux/amd64` image for Windows x86_64.
 The included backend release workflow publishes both `linux/amd64` and
 `linux/arm64` variants under the same tag.
 
-On macOS/Linux, run `bash install.sh` inside the extracted release. To build and
-install from a source checkout into a permanent user-local directory:
+On macOS/Linux, extract the archive, open Terminal in the extracted folder, and
+run:
+
+```bash
+bash install.sh
+```
+
+To build and install from a source checkout into a permanent user-local directory:
 
 ```bash
 cargo build --release --package bv-sim
