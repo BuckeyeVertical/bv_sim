@@ -194,10 +194,12 @@ executable.
 To prepare a release, edit that version in `Cargo.toml`, then run:
 
 ```bash
-cargo check --workspace
+cargo update --workspace
 ```
 
-Cargo refreshes the workspace versions in `Cargo.lock`. Commit both files,
+Cargo refreshes the workspace versions in `Cargo.lock` without compiling the
+app. This is the command [Cargo documents for version changes](https://doc.rust-lang.org/cargo/commands/cargo-update.html#update-options).
+Commit both files,
 create a matching `vX.Y.Z` tag, and push the commit and tag. Both release
 workflows compare the tag to `Cargo.toml`, and native builds use `--locked` to
 require an up-to-date lockfile.
