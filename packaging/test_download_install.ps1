@@ -12,10 +12,14 @@ $releaseVersion = $Matches[1]
 $root = Join-Path ([IO.Path]::GetTempPath()) ('bv-sim-bootstrap-test-' + [Guid]::NewGuid().ToString('N'))
 $bundle = Join-Path $root "a user's downloads [test]/bv-sim-$releaseVersion-x86_64-pc-windows-msvc"
 $installed = Join-Path $root "a user's programs [test]/BVSim"
-$script:fixtureArchive = Join-Path $root 'fixture.zip'
-$script:downloadedArchive = $null
-$script:failDownload = $false
-$script:omitAsset = $false
+# Mocks are called from another script: $script: would refer to that installer.
+# Keep their shared state in an object inherited through the calling scopes.
+$downloadFixture = @{
+    Archive = Join-Path $root 'fixture.zip'
+    DownloadedArchive = $null
+    FailDownload = $false
+    OmitAsset = $false
+}
 $originalArchitecture = $env:PROCESSOR_ARCHITECTURE
 $originalWow64Architecture = $env:PROCESSOR_ARCHITEW6432
 
@@ -25,7 +29,7 @@ function Invoke-RestMethod {
         throw "Unexpected release request: $Uri"
     }
     $assets = @()
-    if (-not $script:omitAsset) {
+    if (-not $downloadFixture.OmitAsset) {
         $assets = @([pscustomobject]@{
             name = "bv-sim-$releaseVersion-x86_64-pc-windows-msvc.zip"
             browser_download_url = 'https://example.invalid/release.zip'
@@ -37,9 +41,9 @@ function Invoke-RestMethod {
 function Invoke-WebRequest {
     param([switch]$UseBasicParsing, [string]$Uri, [string]$OutFile)
     if ($Uri -ne 'https://example.invalid/release.zip') { throw "Unexpected asset request: $Uri" }
-    $script:downloadedArchive = $OutFile
-    if ($script:failDownload) { throw 'Simulated download failure' }
-    Copy-Item -LiteralPath $script:fixtureArchive -Destination $OutFile
+    $downloadFixture.DownloadedArchive = $OutFile
+    if ($downloadFixture.FailDownload) { throw 'Simulated download failure' }
+    Copy-Item -LiteralPath $downloadFixture.Archive -Destination $OutFile
 }
 
 try {
@@ -50,7 +54,7 @@ try {
     Set-Content -LiteralPath (Join-Path $bundle 'assets/asset.txt') -Value 'asset'
     Set-Content -LiteralPath (Join-Path $bundle 'scenarios/suas_2026.toml') -Value 'scenario'
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'install.ps1') -Destination $bundle
-    Compress-Archive -LiteralPath $bundle -DestinationPath $script:fixtureArchive -CompressionLevel Fastest
+    Compress-Archive -LiteralPath $bundle -DestinationPath $downloadFixture.Archive -CompressionLevel Fastest
     $bootstrap = Join-Path $PSScriptRoot '../install.ps1'
     $bootstrapContents = Get-Content -LiteralPath $bootstrap -Raw
     # Exercise both file execution and the README's piped Invoke-Expression path.
@@ -64,16 +68,16 @@ try {
     foreach ($file in @('bin/bv-sim.exe', 'assets/asset.txt', 'scenarios/suas_2026.toml')) {
         if (-not (Test-Path -LiteralPath (Join-Path $installed $file))) { throw "Installed $file missing." }
     }
-    if (Test-Path -LiteralPath (Split-Path -Parent $script:downloadedArchive)) { throw 'Download directory was retained.' }
-    $script:failDownload = $true
+    if (Test-Path -LiteralPath (Split-Path -Parent $downloadFixture.DownloadedArchive)) { throw 'Download directory was retained.' }
+    $downloadFixture.FailDownload = $true
     $failed = $false
     try { & $bootstrap -NoPath -InstallDir $installed } catch {
         if (-not $_.ToString().Contains('Simulated download failure')) { throw }
         $failed = $true
     }
     if (-not $failed) { throw 'A failed download was not reported.' }
-    if (Test-Path -LiteralPath (Split-Path -Parent $script:downloadedArchive)) { throw 'Failed download was not cleaned up.' }
-    $script:omitAsset = $true
+    if (Test-Path -LiteralPath (Split-Path -Parent $downloadFixture.DownloadedArchive)) { throw 'Failed download was not cleaned up.' }
+    $downloadFixture.OmitAsset = $true
     $failed = $false
     try { & $bootstrap -NoPath -InstallDir $installed } catch {
         if (-not $_.ToString().Contains('does not include')) { throw }
