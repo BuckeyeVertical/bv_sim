@@ -1,9 +1,12 @@
 # Running BV Sim
 
 From a checkout, run `cargo run -- run suas_2026 --build`. From an installed
-release, run `bv-sim run suas_2026 --image IMAGE:VERSION` with an image that has
-been published or built locally. The first form builds PX4 and Gazebo and can
-take substantially longer than starting a downloaded image.
+release, run `bv-sim run suas_2026`. It pulls
+`ghcr.io/buckeyevertical/bv-sim-backend:latest` before each startup. Use
+`--image IMAGE:VERSION` or `BV_SIM_IMAGE` to select a specific published or local
+image. Explicit versioned images are pulled only when missing locally. Building
+PX4 and Gazebo with `--build` can take substantially longer than starting a
+downloaded image.
 
 The installed executable resolves assets and scenarios relative to its own
 installation; it does not depend on the terminal's current directory.

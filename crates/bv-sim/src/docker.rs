@@ -19,10 +19,7 @@ use crate::{cli::BackendArgs, paths::Paths, scenario::Scenario};
 pub const CONTAINER_NAME: &str = "bv-sim";
 pub const MANAGED_LABEL: &str = "org.buckeyevertical.bv-sim";
 const MANAGED_VALUE: &str = "managed-v1";
-pub const DEFAULT_IMAGE: &str = concat!(
-    "ghcr.io/buckeyevertical/bv-sim-backend:",
-    env!("CARGO_PKG_VERSION")
-);
+pub const DEFAULT_IMAGE: &str = "ghcr.io/buckeyevertical/bv-sim-backend:latest";
 pub const LOCAL_IMAGE: &str = concat!("bv-sim-backend:", env!("CARGO_PKG_VERSION"));
 
 #[derive(Clone)]
@@ -117,8 +114,10 @@ impl Docker {
             if !self.inherited(&build_arguments(source, &image, args.platform.as_deref()))? {
                 bail!("backend image build failed; review the Docker build output above");
             }
-        } else if !self.output(&["image", "inspect", &image])?.status.success() {
-            eprintln!("Downloading {image}");
+        } else if image == DEFAULT_IMAGE
+            || !self.output(&["image", "inspect", &image])?.status.success()
+        {
+            eprintln!("Pulling {image}");
             let mut pull = vec!["pull".to_owned()];
             if let Some(platform) = &args.platform {
                 pull.extend(["--platform".to_owned(), platform.clone()]);
@@ -458,12 +457,104 @@ mod tests {
     fn local_build_has_separate_default_tag_and_handles_spaces() {
         assert_eq!(selected_image(&backend(true)), LOCAL_IMAGE);
         assert_eq!(selected_image(&backend(false)), DEFAULT_IMAGE);
+        assert_eq!(
+            DEFAULT_IMAGE,
+            "ghcr.io/buckeyevertical/bv-sim-backend:latest"
+        );
+        let mut explicit = backend(false);
+        explicit.image = Some("example:0.1.0".to_owned());
+        assert_eq!(selected_image(&explicit), "example:0.1.0");
+        explicit.build = true;
+        assert_eq!(selected_image(&explicit), "example:0.1.0");
         let args = build_arguments(Path::new("/tmp/a checkout"), "image:1", Some("linux/amd64"));
         assert_eq!(
             args[2],
             Path::new("/tmp/a checkout").join("backend/Dockerfile")
         );
         assert_eq!(args.last().unwrap(), OsStr::new("/tmp/a checkout"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn latest_is_refreshed_and_explicit_versions_reuse_cached_images() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = std::env::temp_dir().join(format!("bv-sim-image-pull-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let script = root.join("docker");
+        let calls = root.join("calls");
+        let fail = root.join("fail");
+        let quote =
+            |path: &Path| format!("'{}'", path.display().to_string().replace('\'', "'\\''"));
+        std::fs::write(
+            &script,
+            format!(
+                r#"#!/bin/sh
+printf '%s\n' "$*" >> {calls}
+if [ "$1" = pull ]; then
+    if [ -f {fail} ]; then exit 1; fi
+    exit 0
+fi
+if [ "$1" = image ] && [ "$2" = inspect ]; then
+    if [ "$3" = example:missing ]; then exit 1; fi
+    exit 0
+fi
+exit 1
+"#,
+                calls = quote(&calls),
+                fail = quote(&fail),
+            ),
+        )
+        .unwrap();
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let docker = Docker::new(script.as_os_str());
+        let paths = Paths {
+            assets: root.join("assets"),
+            scenarios: root.join("scenarios"),
+            discovered_source: None,
+        };
+        let shutdown = AtomicBool::new(false);
+
+        for _ in 0..2 {
+            assert_eq!(
+                docker
+                    .prepare_image(&backend(false), &paths, &shutdown)
+                    .unwrap(),
+                DEFAULT_IMAGE
+            );
+        }
+        assert_eq!(
+            std::fs::read_to_string(&calls).unwrap(),
+            format!("pull {DEFAULT_IMAGE}\npull {DEFAULT_IMAGE}\n")
+        );
+
+        std::fs::write(&calls, "").unwrap();
+        let mut explicit = backend(false);
+        explicit.image = Some("example:0.1.0".to_owned());
+        assert_eq!(
+            docker.prepare_image(&explicit, &paths, &shutdown).unwrap(),
+            "example:0.1.0"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&calls).unwrap(),
+            "image inspect example:0.1.0\n"
+        );
+
+        std::fs::write(&calls, "").unwrap();
+        explicit.image = Some("example:missing".to_owned());
+        explicit.platform = Some("linux/arm64".to_owned());
+        docker.prepare_image(&explicit, &paths, &shutdown).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(&calls).unwrap(),
+            "image inspect example:missing\npull --platform linux/arm64 example:missing\n"
+        );
+
+        std::fs::write(&fail, "").unwrap();
+        assert!(
+            docker
+                .prepare_image(&backend(false), &paths, &shutdown)
+                .is_err()
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

@@ -28,10 +28,10 @@ Open a new terminal and run:
 bv-sim run suas_2026
 ```
 
-The launcher downloads the matching backend image automatically. Run the install
-command again to upgrade to the latest published release. Installation requires
-no Rust, source checkout, or administrator access. Linux needs a desktop session,
-GPU drivers, and the window/audio runtime libraries described below.
+The launcher pulls the latest published backend image automatically. Run the
+install command again to upgrade to the latest published release. Installation
+requires no Rust, source checkout, or administrator access. Linux needs a desktop
+session, GPU drivers, and the window/audio runtime libraries described below.
 
 ## Run from source
 
@@ -53,7 +53,7 @@ the physics backend remains Linux on every host. Backend builds use Docker's
 native Linux architecture unless `BV_SIM_PLATFORM` is set.
 
 The launcher reads `scenarios/suas_2026.toml`, passes its geographic origin to PX4
-through environment variables, builds or obtains the matching image, waits for
+through environment variables, builds or pulls the selected image, waits for
 PX4 and valid simulation state, then opens Bevy. Closing the window or pressing
 Ctrl+C stops only the container created by that command. It uses the name
 `bv-sim`, leaving the old `bv-simulator` and `bv-mission` containers alone.
@@ -120,10 +120,17 @@ Once an image has actually been published, a release user can run:
 bv-sim run suas_2026
 ```
 
-The launcher downloads a missing image automatically. `BV_SIM_IMAGE` sets a
-default registry image, while `--build` defaults to the local tag
-`bv-sim-backend:<version>`. Registry errors explain how to build locally or supply an
-available image. `latest` is deliberately not used for version matching.
+The launcher defaults to `ghcr.io/buckeyevertical/bv-sim-backend:latest` and
+pulls it before each startup so cached images are refreshed. Override the image
+with `--image` or `BV_SIM_IMAGE`, for example:
+
+```bash
+bv-sim run suas_2026 --image ghcr.io/buckeyevertical/bv-sim-backend:0.1.1
+```
+
+Explicit versioned images are reused locally and downloaded when missing.
+`--build` defaults to the local tag `bv-sim-backend:<version>`. Registry errors
+explain how to build locally or supply an available image.
 
 ## Interfaces
 
@@ -178,11 +185,11 @@ The [local validation record](docs/validation.md) describes the tested startup,
 camera, cleanup, and installer paths and the remaining platform checks.
 
 The launcher's default backend image is
-`ghcr.io/buckeyevertical/bv-sim-backend:<version>`. The single source for the app
-version is `[workspace.package].version` in
-`Cargo.toml`. All crates inherit it; image tags and archive names use it, and
-the compiled executable reports it with `bv-sim --version`. Installers read the
-version from that executable.
+`ghcr.io/buckeyevertical/bv-sim-backend:latest`. The single source for the app
+version is `[workspace.package].version` in `Cargo.toml`. All crates inherit it;
+versioned image tags and archive names use it, and the compiled executable
+reports it with `bv-sim --version`. Installers read the version from that
+executable.
 
 To prepare a release, edit that version in `Cargo.toml`, then run:
 
@@ -198,8 +205,10 @@ require an up-to-date lockfile.
 Set repository variables
 `BV_SIM_PUBLISH_IMAGES=true`,
 `BV_SIM_IMAGE_REPOSITORY=ghcr.io/buckeyevertical/bv-sim-backend` to enable
-versioned image publication. Publishing from `BuckeyeVertical/bv_sim` uses the
-repository's automatic `GITHUB_TOKEN` with `packages: write`; leave
+image publication with both the app version tag and `latest`. If image
+publication is disabled, new executables use the existing `latest` image.
+Publishing from `BuckeyeVertical/bv_sim` uses the repository's automatic
+`GITHUB_TOKEN` with `packages: write`; leave
 `BV_SIM_REGISTRY_USERNAME` and `GHCR_TOKEN` unset to use that authentication.
 For another namespace, `BV_SIM_REGISTRY_USERNAME` and the Actions secret
 `GHCR_TOKEN` can override the registry login. See
