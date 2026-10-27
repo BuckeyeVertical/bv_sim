@@ -31,8 +31,9 @@ Open a new terminal and run:
 bv-sim run suas_2026
 ```
 
-The launcher pulls the latest published backend image automatically. Run the
-install command again to upgrade to the latest published release. Installation
+The launcher downloads backend image `0.1.7` when it is missing locally, then
+reuses it on later runs, including offline. Run the install command again to
+upgrade to the latest published executable. Installation
 requires no Rust, source checkout, or administrator access. Linux needs a desktop
 session, GPU drivers, and the window/audio runtime libraries described below.
 
@@ -123,15 +124,17 @@ Once an image has actually been published, a release user can run:
 bv-sim run suas_2026
 ```
 
-The launcher defaults to `ghcr.io/buckeyevertical/bv-sim-backend:latest` and
-pulls it before each startup so cached images are refreshed. Override the image
+The launcher defaults to `ghcr.io/buckeyevertical/bv-sim-backend:0.1.7` and
+checks for that tag locally before downloading it. Once downloaded, normal runs
+work offline. The backend version is pinned independently of the executable
+version. Override the image
 with `--image` or `BV_SIM_IMAGE`, for example:
 
 ```bash
 bv-sim run suas_2026 --image ghcr.io/buckeyevertical/bv-sim-backend:0.1.1
 ```
 
-Explicit versioned images are reused locally and downloaded when missing.
+All selected images are reused locally and downloaded only when missing.
 `--build` defaults to the local tag `bv-sim-backend:<version>`. Registry errors
 explain how to build locally or supply an available image.
 
@@ -188,7 +191,9 @@ The [local validation record](docs/validation.md) describes the tested startup,
 camera, cleanup, and installer paths and the remaining platform checks.
 
 The launcher's default backend image is
-`ghcr.io/buckeyevertical/bv-sim-backend:latest`. The single source for the app
+`ghcr.io/buckeyevertical/bv-sim-backend:0.1.7`, pinned in
+`crates/bv-sim/src/docker.rs` independently of the app version. Change that pin
+only when an executable needs a newer backend. The single source for the app
 version is `[workspace.package].version` in `Cargo.toml`. All crates inherit it;
 versioned image tags and archive names use it, and the compiled executable
 reports it with `bv-sim --version`. Installers read the version from that
@@ -211,7 +216,8 @@ Set repository variables
 `BV_SIM_PUBLISH_IMAGES=true`,
 `BV_SIM_IMAGE_REPOSITORY=ghcr.io/buckeyevertical/bv-sim-backend` to enable
 image publication with both the app version tag and `latest`. If image
-publication is disabled, new executables use the existing `latest` image.
+publication is disabled, new executables continue using the pinned backend
+version; executable version changes do not change that pin.
 Publishing from `BuckeyeVertical/bv_sim` uses the repository's automatic
 `GITHUB_TOKEN` with `packages: write`; leave
 `BV_SIM_REGISTRY_USERNAME` and `GHCR_TOKEN` unset to use that authentication.

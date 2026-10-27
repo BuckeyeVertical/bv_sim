@@ -73,5 +73,5 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          gh release view "$RELEASE_TAG" || gh release create "$RELEASE_TAG" --verify-tag --title "BV Sim $RELEASE_TAG" --notes "Native renderer and runtime assets. The launcher uses the latest published backend image by default; use --image to select a specific image."
+          gh release view "$RELEASE_TAG" || gh release create "$RELEASE_TAG" --verify-tag --title "BV Sim $RELEASE_TAG" --notes "Native renderer and runtime assets. The launcher uses a pinned backend version and downloads it only when missing locally; use --image to select another image."
           gh release upload "$RELEASE_TAG" dist/* --clobber

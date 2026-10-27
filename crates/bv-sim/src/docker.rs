@@ -19,7 +19,8 @@ use crate::{cli::BackendArgs, paths::Paths, scenario::Scenario};
 pub const CONTAINER_NAME: &str = "bv-sim";
 pub const MANAGED_LABEL: &str = "org.buckeyevertical.bv-sim";
 const MANAGED_VALUE: &str = "managed-v1";
-pub const DEFAULT_IMAGE: &str = "ghcr.io/buckeyevertical/bv-sim-backend:latest";
+// Backend releases advance independently of the native executable version.
+pub const DEFAULT_IMAGE: &str = "ghcr.io/buckeyevertical/bv-sim-backend:0.1.7";
 pub const LOCAL_IMAGE: &str = concat!("bv-sim-backend:", env!("CARGO_PKG_VERSION"));
 
 #[derive(Clone)]
@@ -114,9 +115,7 @@ impl Docker {
             if !self.inherited(&build_arguments(source, &image, args.platform.as_deref()))? {
                 bail!("backend image build failed; review the Docker build output above");
             }
-        } else if image == DEFAULT_IMAGE
-            || !self.output(&["image", "inspect", &image])?.status.success()
-        {
+        } else if !self.output(&["image", "inspect", &image])?.status.success() {
             eprintln!("Pulling {image}");
             let mut pull = vec!["pull".to_owned()];
             if let Some(platform) = &args.platform {
@@ -125,8 +124,7 @@ impl Docker {
             pull.push(image.clone());
             if !self.inherited(&pull)? {
                 bail!(
-                    "could not download {image}. This checkout does not publish an image automatically. From the source checkout use `bv-sim run {} --build`, or provide an available image with --image IMAGE / BV_SIM_IMAGE. For a private registry, sign in with `docker login` first",
-                    "suas_2026"
+                    "{image} is not available locally and could not be downloaded. Connect to the internet and retry, or select a cached image with --image IMAGE / BV_SIM_IMAGE. For a private registry, sign in with `docker login` first. To build from source, use `bv-sim run suas_2026 --build`"
                 );
             }
         }
@@ -460,7 +458,7 @@ mod tests {
         assert_eq!(selected_image(&backend(false)), DEFAULT_IMAGE);
         assert_eq!(
             DEFAULT_IMAGE,
-            "ghcr.io/buckeyevertical/bv-sim-backend:latest"
+            "ghcr.io/buckeyevertical/bv-sim-backend:0.1.7"
         );
         let mut explicit = backend(false);
         explicit.image = Some("example:0.1.0".to_owned());
@@ -477,13 +475,14 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn latest_is_refreshed_and_explicit_versions_reuse_cached_images() {
+    fn images_are_pulled_when_missing_and_cached_images_work_offline() {
         use std::os::unix::fs::PermissionsExt;
         let root = std::env::temp_dir().join(format!("bv-sim-image-pull-{}", std::process::id()));
         std::fs::create_dir_all(&root).unwrap();
         let script = root.join("docker");
         let calls = root.join("calls");
         let fail = root.join("fail");
+        let cached = root.join("cached");
         let quote =
             |path: &Path| format!("'{}'", path.display().to_string().replace('\'', "'\\''"));
         std::fs::write(
@@ -493,9 +492,11 @@ mod tests {
 printf '%s\n' "$*" >> {calls}
 if [ "$1" = pull ]; then
     if [ -f {fail} ]; then exit 1; fi
+    if [ "$2" = {default_image} ]; then touch {cached}; fi
     exit 0
 fi
 if [ "$1" = image ] && [ "$2" = inspect ]; then
+    if [ "$3" = {default_image} ]; then test -f {cached}; exit $?; fi
     if [ "$3" = example:missing ]; then exit 1; fi
     exit 0
 fi
@@ -503,6 +504,8 @@ exit 1
 "#,
                 calls = quote(&calls),
                 fail = quote(&fail),
+                cached = quote(&cached),
+                default_image = DEFAULT_IMAGE,
             ),
         )
         .unwrap();
@@ -525,7 +528,9 @@ exit 1
         }
         assert_eq!(
             std::fs::read_to_string(&calls).unwrap(),
-            format!("pull {DEFAULT_IMAGE}\npull {DEFAULT_IMAGE}\n")
+            format!(
+                "image inspect {DEFAULT_IMAGE}\npull {DEFAULT_IMAGE}\nimage inspect {DEFAULT_IMAGE}\n"
+            )
         );
 
         std::fs::write(&calls, "").unwrap();
@@ -550,10 +555,27 @@ exit 1
         );
 
         std::fs::write(&fail, "").unwrap();
-        assert!(
+        std::fs::write(&calls, "").unwrap();
+        assert_eq!(
             docker
                 .prepare_image(&backend(false), &paths, &shutdown)
-                .is_err()
+                .unwrap(),
+            DEFAULT_IMAGE
+        );
+        assert_eq!(
+            std::fs::read_to_string(&calls).unwrap(),
+            format!("image inspect {DEFAULT_IMAGE}\n")
+        );
+
+        std::fs::remove_file(&cached).unwrap();
+        std::fs::write(&calls, "").unwrap();
+        let error = docker
+            .prepare_image(&backend(false), &paths, &shutdown)
+            .unwrap_err();
+        assert!(error.to_string().contains("not available locally"));
+        assert_eq!(
+            std::fs::read_to_string(&calls).unwrap(),
+            format!("image inspect {DEFAULT_IMAGE}\npull {DEFAULT_IMAGE}\n")
         );
         std::fs::remove_dir_all(root).unwrap();
     }

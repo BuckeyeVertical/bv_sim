@@ -55,7 +55,7 @@ pub struct BackendArgs {
     /// Build backend/Dockerfile from a checkout instead of downloading an image.
     #[arg(long, global = true)]
     pub build: bool,
-    /// Image to run, or tag to build. Default run image is the latest published backend.
+    /// Image to run, or tag to build. Defaults to backend 0.1.7, reusing a local copy.
     #[arg(long, global = true, env = "BV_SIM_IMAGE")]
     pub image: Option<String>,
     /// Source checkout containing backend/Dockerfile; used only with --build.
