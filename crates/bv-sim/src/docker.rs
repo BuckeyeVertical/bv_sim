@@ -310,12 +310,8 @@ fn create_arguments(args: &BackendArgs, scenario: &Scenario, image: &str) -> Vec
         format!("{MANAGED_LABEL}={MANAGED_VALUE}"),
         "--label".to_owned(),
         format!("org.buckeyevertical.bv-sim.scenario={}", scenario.name),
-        "--publish".to_owned(),
-        "127.0.0.1:7001:7001/udp".to_owned(),
-        "--publish".to_owned(),
-        "14580:14580/udp".to_owned(),
-        "--publish".to_owned(),
-        "18570:18570/udp".to_owned(),
+        "--network".to_owned(),
+        "host".to_owned(),
     ];
     if let Some(platform) = &args.platform {
         command.extend(["--platform".to_owned(), platform.clone()]);
@@ -448,7 +444,12 @@ mod tests {
         );
         assert!(args.contains(&"PX4_HOME_LAT=36.214675".to_owned()));
         assert!(args.contains(&"PX4_HOME_LON=-96.00655556".to_owned()));
-        assert!(args.contains(&"127.0.0.1:7001:7001/udp".to_owned()));
+        assert!(args.windows(2).any(|pair| pair == ["--network", "host"]));
+        assert!(
+            !args
+                .iter()
+                .any(|arg| ["--publish", "-p", "--add-host"].contains(&arg.as_str()))
+        );
         assert!(!args.contains(&"--platform".to_owned()));
         assert_eq!(args.last().unwrap(), "example:0.1.0");
     }

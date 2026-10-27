@@ -42,11 +42,10 @@ Run a freshly created container:
 
 ```sh
 docker run --rm --name bv-sim \
+  --network host \
   -e PX4_HOME_LAT=36.214675 \
   -e PX4_HOME_LON=-96.00655556 \
   -e PX4_HOME_ALT=0 \
-  -p 127.0.0.1:7001:7001/udp \
-  -p 14580:14580/udp -p 18570:18570/udp \
   bv-sim-backend:local
 ```
 
@@ -55,9 +54,16 @@ not a commanded flight height. The native launcher supplies the selected
 scenario's coordinates. The backend always uses its bundled `default` physics
 world; scenario TOML files only configure the scenario name, origin, and camera.
 
+The launcher and manual command use Docker host networking. Linux Docker Engine
+and OrbStack support this directly. On Docker Desktop 4.34 or later, enable
+**Settings → Resources → Network → Enable host networking** first. Port
+publishing is unnecessary in this mode. PX4 keeps its standard localhost
+destinations: connect from the host with `udpin:0.0.0.0:14540` for offboard
+control or `udpin:0.0.0.0:14550` for a GCS.
+
 The state bridge binds `0.0.0.0:7001/udp`. A subscriber sends a binary Hello from
 the socket on which it receives state. The bridge replies to that socket's
-observed address, so Docker NAT does not require a hardcoded host address.
+observed address, without a hardcoded host address.
 Each state datagram contains complete vehicle (ID 1) and camera (ID 2) world poses.
 The subscriber renews its lease with Hello or Heartbeat; leases expire after
 three seconds, and the server admits at most eight subscribers. A Welcome echoes
@@ -78,7 +84,7 @@ container. Use a fresh container for each new simulation run.
 
 Optional bridge overrides are `BV_BRIDGE_ADDRESS`, `BV_BRIDGE_PORT`,
 `BV_POSE_TOPIC`, `BV_VEHICLE_NAME`, and `BV_CAMERA_NAME`. If changing the bridge
-port, also override Docker's health command and published port. The numeric
+port, also override Docker's health command and the client's endpoint. The numeric
 protocol IDs remain stable when Gazebo entity names are overridden.
 
 ## Tests
