@@ -61,6 +61,9 @@ PX4 and valid simulation state, then opens Bevy. Closing the window or pressing
 Ctrl+C stops only the container created by that command. It uses the name
 `bv-sim`, leaving the old `bv-simulator` and `bv-mission` containers alone.
 
+Run the Glacier Ridge Metro Park meadow with `cargo run -- run glacier_2027`.
+See the [Glacier 2027 mission coordinates](docs/glacier_2027.md).
+
 Useful commands:
 
 ```bash

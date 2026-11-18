@@ -1,5 +1,6 @@
-//! The SUAS visual world and its geographic origin.
+//! Visual worlds and their geographic origins.
 
+mod glacier_2027;
 pub mod shared;
 mod suas_2026;
 
@@ -11,16 +12,25 @@ pub enum WorldChoice {
     /// The SUAS 2026 competition field: boundaries, lap route, targets and trees.
     #[command(name = "suas_2026")]
     Suas2026,
+    /// A Glacier Ridge Metro Park meadow with a mannequin and suitcase.
+    #[command(name = "glacier_2027")]
+    Glacier2027,
 }
 
 impl WorldChoice {
     pub fn name(&self) -> &'static str {
-        "suas_2026"
+        match self {
+            Self::Suas2026 => "suas_2026",
+            Self::Glacier2027 => "glacier_2027",
+        }
     }
 
     /// Geographic location corresponding to the local physics/visual origin.
     pub fn px4_home(&self) -> GeoPoint {
-        geo::SUAS_2026_FIELD
+        match self {
+            Self::Suas2026 => geo::SUAS_2026_FIELD,
+            Self::Glacier2027 => glacier_2027::HOME,
+        }
     }
 }
 
@@ -42,6 +52,9 @@ impl Plugin for WorldPlugin {
         match self.0 {
             WorldChoice::Suas2026 => {
                 app.add_plugins(suas_2026::Suas2026Plugin);
+            }
+            WorldChoice::Glacier2027 => {
+                app.add_plugins(glacier_2027::Glacier2027Plugin);
             }
         }
     }

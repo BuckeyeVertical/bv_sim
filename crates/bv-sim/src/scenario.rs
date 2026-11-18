@@ -161,12 +161,13 @@ mod tests {
     }
 
     #[test]
-    fn suas_coordinates_match_the_visual_origin() {
-        let world = WorldChoice::Suas2026;
+    fn bundled_coordinates_match_the_visual_origins() {
         let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scenarios");
-        let scenario = Scenario::load(&directory, &world).unwrap();
-        assert_eq!(scenario.home.latitude, world.px4_home().latitude);
-        assert_eq!(scenario.home.longitude, world.px4_home().longitude);
+        for world in [WorldChoice::Suas2026, WorldChoice::Glacier2027] {
+            let scenario = Scenario::load(&directory, &world).unwrap();
+            assert_eq!(scenario.home.latitude, world.px4_home().latitude);
+            assert_eq!(scenario.home.longitude, world.px4_home().longitude);
+        }
     }
 
     #[test]
