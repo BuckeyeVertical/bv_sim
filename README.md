@@ -7,11 +7,10 @@ file mounts. The waypoint editor is outside this rewrite.
 
 ## Installation
 
-Install and start Docker Desktop or Docker Engine first. Install the latest
-published executable and assets with the command for your operating system.
-The backend uses host networking, supported directly by Linux Docker Engine
-and OrbStack. On Docker Desktop 4.34 or later, first enable **Settings →
-Resources → Network → Enable host networking**.
+Install and start Docker Desktop, OrbStack, or Docker Engine first. Install the
+latest published executable and assets with the command for your operating system.
+On Windows, enable **Settings → Resources → Network → Enable host networking**
+in Docker Desktop 4.34 or later.
 
 **macOS (Apple Silicon) or Linux (x86_64, Ubuntu 24.04 or compatible), in Terminal:**
 
@@ -144,7 +143,7 @@ explain how to build locally or supply an available image.
 |---|---|---|
 | Gazebo bridge → Bevy | Versioned FlatBuffers state over UDP | `127.0.0.1:7001` |
 | Bevy → mission vision | Existing `bv.camera_frame` v1 JSON header + JPEG over TCP | `127.0.0.1:7002` |
-| PX4 ↔ mission flight control | MAVLink UDP | Host `udpin:0.0.0.0:14540` (offboard), `udpin:0.0.0.0:14550` (GCS) |
+| PX4 ↔ `bv_autonomy` | MAVLink UDP | macOS/Linux `udpout://127.0.0.1:14580`, Windows `udpin://0.0.0.0:14540` |
 
 State messages carry run IDs, sequence numbers, simulation timestamps, and the
 vehicle/camera poses. Missing or older UDP updates do not block rendering.

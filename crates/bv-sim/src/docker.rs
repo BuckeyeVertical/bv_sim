@@ -308,9 +308,12 @@ fn create_arguments(args: &BackendArgs, scenario: &Scenario, image: &str) -> Vec
         format!("{MANAGED_LABEL}={MANAGED_VALUE}"),
         "--label".to_owned(),
         format!("org.buckeyevertical.bv-sim.scenario={}", scenario.name),
-        "--network".to_owned(),
-        "host".to_owned(),
     ];
+    command.extend(
+        backend_network_arguments(cfg!(windows))
+            .iter()
+            .map(|arg| (*arg).to_owned()),
+    );
     if let Some(platform) = &args.platform {
         command.extend(["--platform".to_owned(), platform.clone()]);
     }
@@ -328,6 +331,23 @@ fn create_arguments(args: &BackendArgs, scenario: &Scenario, image: &str) -> Vec
     }
     command.push(image.to_owned());
     command
+}
+
+fn backend_network_arguments(windows: bool) -> &'static [&'static str] {
+    if windows {
+        // Autonomy listens for PX4's outbound telemetry on Windows.
+        &["--network", "host"]
+    } else {
+        // Autonomy initiates the connection to PX4's onboard port.
+        &[
+            "--publish",
+            "127.0.0.1:7001:7001/udp",
+            "--publish",
+            "127.0.0.1:14580:14580/udp",
+            "--publish",
+            "127.0.0.1:18570:18570/udp",
+        ]
+    }
 }
 
 #[derive(Deserialize)]
@@ -442,14 +462,26 @@ mod tests {
         );
         assert!(args.contains(&"PX4_HOME_LAT=36.214675".to_owned()));
         assert!(args.contains(&"PX4_HOME_LON=-96.00655556".to_owned()));
-        assert!(args.windows(2).any(|pair| pair == ["--network", "host"]));
-        assert!(
-            !args
-                .iter()
-                .any(|arg| ["--publish", "-p", "--add-host"].contains(&arg.as_str()))
-        );
+        let network = backend_network_arguments(cfg!(windows));
+        assert!(args.windows(network.len()).any(|part| part == network));
         assert!(!args.contains(&"--platform".to_owned()));
         assert_eq!(args.last().unwrap(), "example:0.1.0");
+    }
+
+    #[test]
+    fn backend_network_matches_autonomy_on_each_host() {
+        assert_eq!(backend_network_arguments(true), ["--network", "host"]);
+        assert_eq!(
+            backend_network_arguments(false),
+            [
+                "--publish",
+                "127.0.0.1:7001:7001/udp",
+                "--publish",
+                "127.0.0.1:14580:14580/udp",
+                "--publish",
+                "127.0.0.1:18570:18570/udp",
+            ]
+        );
     }
 
     #[test]

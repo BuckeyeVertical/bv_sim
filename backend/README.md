@@ -38,11 +38,13 @@ PX4 and the state bridge share the pinned PX4/Gazebo build toolchain. FlatBuffer
 static executable is built with that toolchain. The runtime image receives only
 the resulting executables, plugins, models, and worlds.
 
-Run a freshly created container:
+Run a freshly created container on macOS or Linux:
 
 ```sh
 docker run --rm --name bv-sim \
-  --network host \
+  --publish 127.0.0.1:7001:7001/udp \
+  --publish 127.0.0.1:14580:14580/udp \
+  --publish 127.0.0.1:18570:18570/udp \
   -e PX4_HOME_LAT=36.214675 \
   -e PX4_HOME_LON=-96.00655556 \
   -e PX4_HOME_ALT=0 \
@@ -54,12 +56,15 @@ not a commanded flight height. The native launcher supplies the selected
 scenario's coordinates. The backend always uses its bundled `default` physics
 world; scenario TOML files only configure the scenario name, origin, and camera.
 
-The launcher and manual command use Docker host networking. Linux Docker Engine
-and OrbStack support this directly. On Docker Desktop 4.34 or later, enable
-**Settings → Resources → Network → Enable host networking** first. Port
-publishing is unnecessary in this mode. PX4 keeps its standard localhost
-destinations: connect from the host with `udpin:0.0.0.0:14540` for offboard
-control or `udpin:0.0.0.0:14550` for a GCS.
+On macOS and Linux, the launcher publishes the same loopback ports as the
+manual command. `bv_autonomy` initiates the connection with
+`udpout://127.0.0.1:14580`. A local GCS can send to `127.0.0.1:18570`.
+
+On Windows, the launcher uses Docker host networking so PX4 can send to
+`bv_autonomy` at `udpin://0.0.0.0:14540` and to a GCS listening on UDP 14550.
+For a manual launch on Windows, replace the three `--publish` flags with
+`--network host`. In Docker Desktop 4.34 or later, enable **Settings → Resources
+→ Network → Enable host networking** first.
 
 The state bridge binds `0.0.0.0:7001/udp`. A subscriber sends a binary Hello from
 the socket on which it receives state. The bridge replies to that socket's
