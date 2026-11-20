@@ -1950,14 +1950,14 @@ checksum = "87a0cf66fd1eb2fb7b822cb78370d82303750809bc6ba855f3f58e517d3238db"
 
 [[package]]
 name = "bv-protocol"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "flatbuffers",
 ]
 
 [[package]]
 name = "bv-renderer"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "bevy",
  "bv-protocol",
@@ -1969,7 +1969,7 @@ dependencies = [
 
 [[package]]
 name = "bv-sim"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "anyhow",
  "bevy",
