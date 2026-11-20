@@ -13,4 +13,4 @@ ctrlc.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true
-bv-renderer = { path = "../bv-renderer" }
+bv-renderer.workspace = true
